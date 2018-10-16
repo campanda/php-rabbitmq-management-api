@@ -23,6 +23,8 @@ class Client
     protected $client;
     protected $messageFactory;
     protected $baseUrl;
+    protected $username;
+    protected $password;
 
     /**
      * @param HttpClient $client
@@ -151,6 +153,14 @@ class Client
     public function users()
     {
         return new Api\User($this);
+    }
+
+    /**
+     * @return Api\Consumer
+     */
+    public function consumers()
+    {
+        return new Api\Consumer($this);
     }
 
     /**
