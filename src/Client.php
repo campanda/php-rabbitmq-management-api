@@ -2,6 +2,8 @@
 
 namespace RabbitMq\ManagementApi;
 
+use Symfony\Component\Serializer\SerializerInterface;
+
 use Http\Client\Common\Plugin\AuthenticationPlugin;
 use Http\Client\Common\Plugin\HeaderDefaultsPlugin;
 use Http\Client\Common\PluginClient;
@@ -11,9 +13,10 @@ use Http\Discovery\MessageFactoryDiscovery;
 use Http\Message\Authentication\BasicAuth;
 
 /**
- * ManagementApi
+ * Client
  *
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
+ * @author Helmut Hoffer von Ankershoffen <hhva@campanda.com>
  */
 class Client
 {
@@ -25,6 +28,10 @@ class Client
     protected $baseUrl;
     protected $username;
     protected $password;
+    /**
+     * @var SerializerInterface
+     */
+    protected $serializer;
 
     /**
      * @param HttpClient $client
@@ -32,7 +39,7 @@ class Client
      * @param string $username
      * @param string $password
      */
-    public function __construct(HttpClient $client = null, $baseUrl = 'http://localhost:15672', $username = 'guest', $password = 'guest')
+    public function __construct(HttpClient $client = null, SerializerInterface $serializer, $baseUrl = 'http://localhost:15672', $username = 'guest', $password = 'guest')
     {
         $this->baseUrl = $baseUrl;
         $this->messageFactory = MessageFactoryDiscovery::find();
@@ -42,6 +49,8 @@ class Client
             new AuthenticationPlugin(new BasicAuth($username, $password)),
             new HeaderDefaultsPlugin(['Content-Type' => 'application/json'])
         ]);
+
+        $this->serializer = $serializer;
     }
 
     /**
@@ -196,13 +205,15 @@ class Client
     }
 
     /**
-     * @param string $endpoint Resource URI.
+     * @param $endpoint
      * @param string $method
-     * @param array $headers  HTTP headers
-     * @param string|resource|array $body Entity body of request (POST/PUT) or response (GET)
-     * @return array
+     * @param array $headers
+     * @param null $body
+     * @param bool $decode
+     * @return array|mixed|object|string
+     * @throws \Http\Client\Exception
      */
-    public function send($endpoint, $method = 'GET', array $headers = [], $body = null)
+    public function send($endpoint, $method = 'GET', array $headers = [], $body = null, bool $decode=true)
     {
         if (null !== $body) {
             $body = json_encode($body);
@@ -211,6 +222,16 @@ class Client
         $request = $this->messageFactory->createRequest($method, $this->baseUrl . $endpoint, $headers, $body);
         $response = $this->client->sendRequest($request);
 
-        return json_decode($response->getBody()->getContents(), true);
+        if ($decode) {
+            return json_decode($response->getBody()->getContents(), true);
+        }
+        return $response->getBody()->getContents();
+    }
+
+    /**
+     * @return SerializerInterface
+     */
+    public function getSerializer(): SerializerInterface {
+        return $this->serializer;
     }
 }

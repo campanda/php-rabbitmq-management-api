@@ -9,6 +9,9 @@ use RabbitMq\ManagementApi\Client;
  */
 class AbstractApi
 {
+    /**
+     * @var Client
+     */
     protected $client;
 
     public function __construct(Client $client)

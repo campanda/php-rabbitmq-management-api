@@ -4,10 +4,13 @@ namespace RabbitMq\ManagementApi\Api;
 
 use RabbitMq\ManagementApi\Exception\InvalidArgumentException;
 
+use RabbitMq\ManagementApi\DTO\Exchange as ExchangeDTO;
+
 /**
  * Exchange
  *
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
+ * @author Helmut Hoffer von Ankershoffen <hhva@campanda.com>
  */
 class Exchange extends AbstractApi
 {
@@ -19,14 +22,32 @@ class Exchange extends AbstractApi
      * A list of all exchanges in a given virtual host.
      *
      * @param null|string $vhost
+     * @param bool $hydrate
      * @return array
+     * @throws \Http\Client\Exception
      */
-    public function all($vhost = null)
+    public function all(?string $vhost = null, bool $hydrate=false): array
     {
         if ($vhost) {
-            return $this->client->send(sprintf('/api/exchanges/%s', urlencode($vhost)));
+            if (!$hydrate) {
+                return $this->client->send(sprintf('/api/exchanges/%s', urlencode($vhost)));
+            }
+            $json = $this->client->send(sprintf('/api/exchanges/%s', urlencode($vhost)),'GET',[],null,false);
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,ExchangeDTO::class.'[]','json');
+            return $rtn;
         } else {
-            return $this->client->send('/api/exchanges');
+            if (!$hydrate) {
+                return $this->client->send('/api/exchanges');
+            }
+            $json = $this->client->send(sprintf('/api/exchanges/%s', urlencode($vhost)));
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,ExchangeDTO::class.'[]','json');
+            return $rtn;
         }
     }
 

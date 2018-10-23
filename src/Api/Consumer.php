@@ -2,43 +2,50 @@
 
 namespace RabbitMq\ManagementApi\Api;
 
-use RabbitMq\ManagementApi\Exception\InvalidArgumentException;
+use RabbitMq\ManagementApi\DTO\Consumer as ConsumerDTO;
 
 /**
- * Exchange
+ * Consumer
  *
- * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
+ * @author Helmut Hoffer von Ankershoffen <hhva@campanda.com>
  */
 class Consumer extends AbstractApi
 {
     /**
-     * A list of all exchanges.
+     * A list of all consumers.
      *
      * OR
      *
-     * A list of all exchanges in a given virtual host.
+     * A list of all consumers in a given virtual host.
      *
      * @param null|string $vhost
-     * @return array
+     * @param bool $hydrate
+     * @return ConsumerDTO[]|array
+     * @throws \Http\Client\Exception
      */
-    public function all($vhost = null)
+    public function all(?string $vhost = null, bool $hydrate = false): array
     {
         if ($vhost) {
-            return $this->client->send(sprintf('/api/consumers/%s', urlencode($vhost)));
+            if (!$hydrate) {
+                return $this->client->send(sprintf('/api/consumers/%s', urlencode($vhost)));
+            }
+            $json = $this->client->send(sprintf('/api/consumers/%s', urlencode($vhost)),'GET',[],null,false);
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,ConsumerDTO::class.'[]','json');
+            return $rtn;
         } else {
-            return $this->client->send('/api/consumers');
+            if (!$hydrate) {
+                return $this->client->send('/api/consumers');
+            }
+            $json = $this->client->send(sprintf('/api/consumers/%s', urlencode($vhost)));
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,ConsumerDTO::class.'[]','json');
+            return $rtn;
         }
     }
 
-    /**
-     * An individual exchange.
-     *
-     * @param string $vhost
-     * @param string $name
-     * @return array
-     */
-    public function get($vhost, $name)
-    {
-        return $this->client->send(sprintf('/api/consumers/%s/%s', urlencode($vhost), urlencode($name)));
-    }
 }

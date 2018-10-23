@@ -2,8 +2,11 @@
 
 namespace RabbitMq\ManagementApi\Api;
 
+use RabbitMq\ManagementApi\DTO\Binding as BindingDTO;
+
 /**
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
+ * @author Helmut Hoffer von Ankershoffen <hhva@campanda.com>
  */
 class Binding extends AbstractApi
 {
@@ -14,15 +17,33 @@ class Binding extends AbstractApi
      *
      * A list of all bindings in a given virtual host.
      *
-     * @param string|null $vhost
+     * @param null|string $vhost
+     * @param bool $hydrate
      * @return array
+     * @throws \Http\Client\Exception
      */
-    public function all($vhost = null)
+    public function all(?string $vhost = null, bool $hydrate=false): array
     {
         if ($vhost) {
-            return $this->client->send(sprintf('/api/bindings/%s', urlencode($vhost)));
+            if (!$hydrate) {
+                return $this->client->send(sprintf('/api/bindings/%s', urlencode($vhost)));
+            }
+            $json = $this->client->send(sprintf('/api/bindings/%s', urlencode($vhost)),'GET',[],null,false);
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,BindingDTO::class.'[]','json');
+            return $rtn;
         } else {
-            return $this->client->send('/api/bindings');
+            if (!$hydrate) {
+                return $this->client->send('/api/exchanges');
+            }
+            $json = $this->client->send(sprintf('/api/exchanges/%s', urlencode($vhost)));
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,BindingDTO::class.'[]','json');
+            return $rtn;
         }
     }
 

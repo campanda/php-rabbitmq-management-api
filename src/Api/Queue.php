@@ -2,10 +2,13 @@
 
 namespace RabbitMq\ManagementApi\Api;
 
+use RabbitMq\ManagementApi\DTO\Queue as QueueDTO;
+
 /**
  * Queue
  *
  * @author Richard Fullmer <richard.fullmer@opensoftdev.com>
+ * @author Helmut Hoffer von Ankershoffen <hhva@campanda.com>
  */
 class Queue extends AbstractApi
 {
@@ -16,15 +19,33 @@ class Queue extends AbstractApi
      *
      * A list of all queues in a given virtual host.
      *
-     * @param string|null $vhost
-     * @return array
+     * @param null|string $vhost
+     * @param bool $hydrate
+     * @return QueueDTO[]|array
+     * @throws \Http\Client\Exception
      */
-    public function all($vhost = null)
+    public function all(?string $vhost = null, bool $hydrate=false): array
     {
         if ($vhost) {
-            return $this->client->send(sprintf('/api/queues/%s', urlencode($vhost)));
+            if (!$hydrate) {
+                return $this->client->send(sprintf('/api/queues/%s', urlencode($vhost)));
+            }
+            $json = $this->client->send(sprintf('/api/queues/%s', urlencode($vhost)),'GET',[],null,false);
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,QueueDTO::class.'[]','json');
+            return $rtn;
         } else {
-            return $this->client->send('/api/queues');
+            if (!$hydrate) {
+                return $this->client->send('/api/queues');
+            }
+            $json = $this->client->send(sprintf('/api/queues/%s', urlencode($vhost)));
+            /**
+             * @var array $rtn
+             */
+            $rtn=$this->client->getSerializer()->deserialize($json,QueueDTO::class.'[]','json');
+            return $rtn;
         }
     }
 
